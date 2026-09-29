@@ -49,3 +49,4 @@ end <- which(notes == "||")
 if(length(end)==0){
   warning("没有找到乐曲结束标记 ||")
 }
+
