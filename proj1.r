@@ -3,77 +3,158 @@ length(music_raw)
 head(music_raw,50)
 
 preprocess <- function(rawdata) {
-  # (a) 删除前3行（文件头部说明文字）
-  if(length(rawdata) >3){
+  # (a) Remove first 3 header lines
+  if(length(rawdata) > 3){
     rawdata <- rawdata[-(1:3)]
   }
-  # (b) 删除以#开头的注释行；F#这种音符不受影响
+  # (b) Remove full comment lines starting with #; keep notes like F#5e
   remove_rows <- grepl("^#", rawdata)
   rawdata <- rawdata[!remove_rows]
   
-  # (c)识别空白行，空白行代表乐曲结束，给上一行末尾加上 " ||"
-  out_lines <- c()
-  for (line in rawdata) {
-    trimmed_line <- trimws(line)
-    if (trimmed_line == "") {
-      if (length(out_lines) > 0) {
-        last_pos <- length(out_lines)
-        out_lines[last_pos] <- paste0(out_lines[last_pos], " ||")
-      }
-    } else {
-      out_lines <- c(out_lines, line)
-    }
+  # (c) Detect blank lines (end of piece), append " ||" to the previous line
+  is_blank <- trimws(rawdata) == ""
+  keep_line <- !is_blank
+  out_lines <- rawdata[keep_line]
+  blank_idx <- which(is_blank)
+  target_idx <- blank_idx - 1
+  target_idx <- target_idx[target_idx >= 1 & target_idx <= length(out_lines)]
+  if(length(target_idx) > 0){
+    out_lines[target_idx] <- paste0(out_lines[target_idx], " ||")
   }
   
-  # (d) 普通行末尾加 " |"；已经有 || 的不加
+  # (d) Append " |" to normal lines; skip lines already ending with || or |
   for (i in seq_along(out_lines)) {
-    if (!grepl("\\|\\|$", out_lines[i])) {
-      out_lines[i] <- paste0(out_lines[i], " |")
+    line_tmp <- out_lines[i]
+    if (!grepl("\\|\\|$", line_tmp) && !grepl("\\|$", line_tmp)) {
+      out_lines[i] <- paste0(line_tmp, " |")
     }
   }
   
-  # (e) 按空白切分，展开成单个token，删掉空字符串
+  # (e) Split into individual tokens by whitespace, remove empty strings
   split_result <- strsplit(out_lines, "\\s+")
   all_tokens <- unlist(split_result)
   clean_tokens <- all_tokens[all_tokens != ""]
   
   return(clean_tokens)
 }
-
-# ========== 主执行代码 ==========
+# ========== Main execution ==========
 music_raw <- readLines("palestrina.txt")
 music_clean <- preprocess(music_raw)
-
-# Task5
+# Task5 Markov chain setup
 notes <- unique(music_clean)
 tokens <- match(music_clean, notes)
+# Safety check for end marker ||
 end <- which(notes == "||")
-
-
-print("前10个token：")
-print(head(music_clean,10))
-print("最后10个token：")
-print(tail(music_clean,10))
-print(paste("总token数量：", length(music_clean)))
-print(paste("结束标记||对应的整数id：", end))
-
-
-make_matrx<-function(tokens,end,mlag = 4){
-  n<-length(tokens)
-  # 6.(a) Create an (n- mlag) × (mlag + 1) matrix
-  M<-matrix(0,nrow = n-mlag,ncol= mlag+1)
-  # slipping windows
-  for (i in 0:mlag){
-    M[,i+1]<- tokens[(i+1):(i+n-mlag)]
-  }
-  # 6.(b)define the invalid rows
-  invalid_rows<-rowSums(M[,1:mlag,drop = FALSE]==end)>0
-  #delect the invalid rows
-  M<-M[!invalid_rows, ,drop=FALSE]
-  return (M)
+if(length(end)==0){
+  warning("End marker || not found in tokens")
 }
 
-
-
+# ==============================================================================
+# Task 6: Construct Lagged Transition Matrix make_matrix
+# ==============================================================================
+make_matrix <- function(tokens, end, mlag = 4) {
+  n <- length(tokens)
   
+  # (a) Create an (n - mlag) x (mlag + 1) matrix for adjacent token sequences
+  M <- matrix(0L, nrow = n - mlag, ncol = mlag + 1)
+  for (j in 1:(mlag + 1)) {
+    M[, j] <- tokens[j:(n - mlag + j - 1)]
+  }
   
+  # (b) Discard rows where the double bar-line token '||' appears in the first mlag columns
+  # Sequences spanning across two separate musical pieces must not be used
+  rows_with_end <- which(rowSums(M[, 1:mlag, drop = FALSE] == end) > 0)
+  if (length(rows_with_end) > 0) {
+    M <- M[-rows_with_end, , drop = FALSE]
+  }
+  
+  return(M)
+}
+
+cat("Constructing transition matrix M (mlag = 4)...\n")
+end_token_id <- which(notes == "||")
+M <- make_matrix(tokens = tokens, end = end_token_id, mlag = 4)
+cat("Matrix M successfully built! Dimensions:", dim(M)[1], "x", dim(M)[2], "\n\n")
+
+# ==============================================================================
+# Task 7: Next-Note Sampling Function next_note
+# ==============================================================================
+next_note <- function(key, M, w = NULL) {
+  # 1. Determine maximum lag mlag from matrix column count
+  mlag <- ncol(M) - 1
+  
+  # Default mixture weights to a vector of ones of length mlag
+  if (is.null(w)) {
+    w <- rep(1, mlag)
+  }
+  
+  # 2. Retain only the trailing mlag tokens if key exceeds mlag
+  if (length(key) > mlag) {
+    key <- tail(key, mlag)
+  }
+  
+  k_max <- length(key)
+  cand_tokens <- integer(0)
+  cand_probs <- numeric(0)
+  
+  # 3. Iterate over orders k from 1 to k_max to construct the mixture distribution
+  for (k in 1:k_max) {
+    # Skip matching when mixture weight is non-positive to optimize speed
+    if (w[k] <= 0) next
+    
+    # Extract suffix of length k and select corresponding columns in M
+    mc <- mlag - k + 1
+    sub_key <- key[(k_max - k + 1):k_max]
+    
+    # Vectorized matching via colSums on transposed sub-matrix
+    ii <- colSums(!(t(M[, mc:mlag, drop = FALSE]) == sub_key))
+    matched_idx <- which(ii == 0)
+    n_u <- length(matched_idx)
+    
+    # Accumulate next-token occurrences and associate with normalized mixture weights
+    if (n_u > 0) {
+      cand_tokens <- c(cand_tokens, M[matched_idx, mlag + 1])
+      cand_probs <- c(cand_probs, rep(w[k] / n_u, n_u))
+    }
+  }
+  
+  # 4. Sampling decision rules (triggering at most one call to sample)
+  total_prob <- sum(cand_probs)
+  
+  if (length(cand_tokens) == 0 || total_prob == 0) {
+    # Case 1: No match found or all probabilities zero -> sample from marginal next-token distribution
+    return(sample(M[, mlag + 1], size = 1))
+  } else if (length(cand_tokens) == 1) {
+    # Case 2: Exactly one candidate -> return directly without invoking sample()
+    return(cand_tokens[1])
+  } else {
+    # Case 3: Multiple candidates -> sample according to empirical mixture probabilities
+    return(sample(cand_tokens, size = 1, prob = cand_probs))
+  }
+}
+
+# ==============================================================================
+# Task 7 Verification Tests
+# ==============================================================================
+cat("=== Testing next_note function ===\n")
+
+# Test 1: Predict next note given an initial sequence (e.g., G4w D5w)
+test_prefix_tokens <- match(c("G4w", "D5w"), notes)
+set.seed(42)
+pred_token <- next_note(key = test_prefix_tokens, M = M)
+cat("Input sequence: G4w D5w\n")
+cat("Predicted next Token ID:", pred_token, "| Corresponding note:", notes[pred_token], "\n\n")
+
+# Test 2: Unseen prefix triggering Case 1 fallback sampling
+dummy_key <- c(99999L, 99999L)
+fallback_token <- next_note(key = dummy_key, M = M)
+cat("Fallback sampled note for non-existent prefix:", notes[fallback_token], "\n\n")
+
+# Test 3: Sequential autoregressive generation of 10 notes
+seq_test <- test_prefix_tokens
+for (step in 1:10) {
+  nxt <- next_note(seq_test, M)
+  seq_test <- c(seq_test, nxt)
+}
+cat("10-note sequence generation demo:\n")
+cat(paste(notes[seq_test], collapse = " "), "\n")
