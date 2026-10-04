@@ -158,3 +158,30 @@ for (step in 1:10) {
 }
 cat("10-note sequence generation demo:\n")
 cat(paste(notes[seq_test], collapse = " "), "\n")
+
+#Task 8
+generate_music<-function(start, M, notes,w=NULL){
+  mlag <- ncol(M) - 1
+  if (is.null(w)) {
+    w <- rep(1, mlag)}
+  end_token <- which(notes == "||")
+  bar_token <- which(notes == "|")
+  gen_seq <- start
+  bar_count <- if (start == bar_token) 1 else 0
+  while (length(gen_seq) < 200 && bar_count < 8 && tail(gen_seq, 1) != end_token) {
+    nxt <- next_note(key = gen_seq, M = M, w = w)
+    gen_seq <- c(gen_seq, nxt)
+    if (nxt == bar_token) {
+      bar_count <- bar_count + 1
+    }
+  }
+  gen_notes <- notes[gen_seq]
+  sim_music <- paste(gen_notes, collapse = " ")
+  return(sim_music)
+}
+
+#test
+set.seed(42)  
+sim_music <- generate_music(start = 20, M = M, notes = notes, w = c(1, 1, 1, 1))
+cat("=== Task 8===\n")
+print(sim_music)
