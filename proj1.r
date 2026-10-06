@@ -76,11 +76,10 @@ end_token_id <- which(notes == "||")
 M <- make_matrix(tokens = tokens, end = end_token_id, mlag = 4)
 cat("Matrix M successfully built! Dimensions:", dim(M)[1], "x", dim(M)[2], "\n\n")
 
-# ==============================================================================
 # Task 7: Next-Note Sampling Function next_note
 # ==============================================================================
 next_note <- function(key, M, w = NULL) {
-  # 1. Determine maximum lag mlag from matrix column count
+  # 1. Determine maximum lag mlag from matrix dimensions
   mlag <- ncol(M) - 1
   
   # Default mixture weights to a vector of ones of length mlag
@@ -97,10 +96,16 @@ next_note <- function(key, M, w = NULL) {
   cand_tokens <- integer(0)
   cand_probs <- numeric(0)
   
-  # 3. Iterate over orders k from 1 to k_max to construct the mixture distribution
+  # 3. Iterate over matching order k from 1 to k_max (k notes suffix)
   for (k in 1:k_max) {
-    # Skip matching when mixture weight is non-positive to optimize speed
-    if (w[k] <= 0) next
+    # According to formula (1): sum_{i=1}^m w_i P(next | v[i:m])
+    # A sequence of length k corresponds to i = mlag - k + 1
+    # Thus, the highest order (k = mlag) uses w[1], and lowest (k = 1) uses w[mlag]
+    w_idx <- mlag - k + 1
+    weight_k <- w[w_idx]
+    
+    # Skip matching when mixture weight is non-positive
+    if (weight_k <= 0) next
     
     # Extract suffix of length k and select corresponding columns in M
     mc <- mlag - k + 1
@@ -111,18 +116,18 @@ next_note <- function(key, M, w = NULL) {
     matched_idx <- which(ii == 0)
     n_u <- length(matched_idx)
     
-    # Accumulate next-token occurrences and associate with normalized mixture weights
+    # If matches are found, accumulate candidate tokens and their weights
     if (n_u > 0) {
       cand_tokens <- c(cand_tokens, M[matched_idx, mlag + 1])
-      cand_probs <- c(cand_probs, rep(w[k] / n_u, n_u))
+      cand_probs <- c(cand_probs, rep(weight_k / n_u, n_u))
     }
   }
   
-  # 4. Sampling decision rules (triggering at most one call to sample)
+  # 4. Sampling decision rules (at most one call to sample)
   total_prob <- sum(cand_probs)
   
   if (length(cand_tokens) == 0 || total_prob == 0) {
-    # Case 1: No match found or all probabilities zero -> sample from marginal next-token distribution
+    # Case 1: No match found -> sample from marginal next-token distribution
     return(sample(M[, mlag + 1], size = 1))
   } else if (length(cand_tokens) == 1) {
     # Case 2: Exactly one candidate -> return directly without invoking sample()
@@ -159,6 +164,7 @@ for (step in 1:10) {
 cat("10-note sequence generation demo:\n")
 cat(paste(notes[seq_test], collapse = " "), "\n")
 
+
 #Task 8
 generate_music<-function(start, M, notes,w=NULL){
   mlag <- ncol(M) - 1
@@ -184,4 +190,5 @@ generate_music<-function(start, M, notes,w=NULL){
 set.seed(42)  
 sim_music <- generate_music(start = 20, M = M, notes = notes, w = c(1, 1, 1, 1))
 cat("=== Task 8===\n")
+print(sim_music)
 print(sim_music)
