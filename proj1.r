@@ -12,15 +12,12 @@ preprocess <- function(rawdata) {
   rawdata <- rawdata[!remove_rows]
   
   # (c) Detect blank lines (end of piece), append " ||" to the previous line
-  is_blank <- trimws(rawdata) == ""
-  keep_line <- !is_blank
-  out_lines <- rawdata[keep_line]
-  blank_idx <- which(is_blank)
-  target_idx <- blank_idx - 1
-  target_idx <- target_idx[target_idx >= 1 & target_idx <= length(out_lines)]
-  if(length(target_idx) > 0){
-    out_lines[target_idx] <- paste0(out_lines[target_idx], " ||")
-  }
+  is_blank <- (trimws(rawdata) == "")
+  target_idx <- which(is_blank) - 1
+  target_idx <- target_idx[target_idx >= 1 & !is_blank[target_idx]]
+  rawdata[target_idx] <- paste0(rawdata[target_idx], " ||")
+  out_lines <- rawdata[!is_blank]
+  
   
   # (d) Append " |" to normal lines; skip lines already ending with || or |
   for (i in seq_along(out_lines)) {
