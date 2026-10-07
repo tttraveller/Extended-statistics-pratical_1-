@@ -185,7 +185,7 @@ generate_music<-function(start, M, notes,w=NULL){
 
 #test
 set.seed(42)  
-sim_music <- generate_music(start = 20, M = M, notes = notes, w = c(1, 1, 1, 1))
+sim_music <- generate_music(start = 20, M = M, notes = notes, w = c(20, 5, 1, 0.05))
 cat("=== Task 8===\n")
 print(sim_music)
 print(sim_music)
