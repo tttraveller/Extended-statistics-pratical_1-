@@ -8,23 +8,22 @@
 # - Sicheng Liang (33.3%): Implemented make_matrix and generate_music, testing suite
 # - Lianjie Wu (33.3%): Implemented next_note sampling engine and code review.
 # All members contributed equally to debugging, documentation, code review and Git version control.
-music_raw <- readLines("palestrina.txt")
-length(music_raw)
-head(music_raw,50)
-
-preprocess <- function(rawdata) {
-  # (a) Remove first 3 header lines
+preprocess <- function(music) {
+  rawdata <- music
+  # (a) Remove the first 3 header lines
   if(length(rawdata) > 3){
     rawdata <- rawdata[-(1:3)]
   }
-  # (b) Remove full comment lines starting with #; keep notes like F#5e
-  remove_rows <- grepl("^#", rawdata)
+  # (b) Remove full comment lines starting with '#' keep notes like 'F#5e'
+  remove_rows <- grepl("^#", rawdata)  #define the line which should be removed
   rawdata <- rawdata[!remove_rows]
   
   # (c) Detect blank lines (end of piece), append " ||" to the previous line
   is_blank <- (trimws(rawdata) == "")
   target_idx <- which(is_blank) - 1
+  # Ensure target indices are valid (positive) and ignore the consecutive blank lines.
   target_idx <- target_idx[target_idx >= 1 & !is_blank[target_idx]]
+  #append double '||' before removing blank lines
   rawdata[target_idx] <- paste0(rawdata[target_idx], " ||")
   out_lines <- rawdata[!is_blank]
   
@@ -37,7 +36,7 @@ preprocess <- function(rawdata) {
     }
   }
   
-  # (e) Split into individual tokens by whitespace, remove empty strings
+  # (e) Split into individual tokens by whitespace, flatten into 1D vector, and remove empty strings 
   split_result <- strsplit(out_lines, "\\s+")
   all_tokens <- unlist(split_result)
   clean_tokens <- all_tokens[all_tokens != ""]
@@ -46,7 +45,7 @@ preprocess <- function(rawdata) {
 }
 # ========== Main execution ==========
 music_raw <- readLines("palestrina.txt")
-music_clean <- preprocess(music_raw)
+music_clean <- preprocess(music = music_raw)
 # Task5 Markov chain setup
 notes <- unique(music_clean)
 tokens <- match(music_clean, notes)
@@ -63,7 +62,7 @@ make_matrix <- function(tokens, end, mlag = 4) {
   n <- length(tokens)
   
   # (a) Create an (n - mlag) x (mlag + 1) matrix for adjacent token sequences
-  M <- matrix(0L, nrow = n - mlag, ncol = mlag + 1)
+  M <- matrix(0L, nrow = n - mlag, ncol = mlag + 1) #'0L' represent the 'integer' category of tokens and save memory.
   for (j in 1:(mlag + 1)) {
     M[, j] <- tokens[j:(n - mlag + j - 1)]
   }
@@ -73,7 +72,7 @@ make_matrix <- function(tokens, end, mlag = 4) {
   rows_with_end <- which(rowSums(M[, 1:mlag, drop = FALSE] == end) > 0)
   if (length(rows_with_end) > 0) {
     M <- M[-rows_with_end, , drop = FALSE]
-  }
+  }# use 'if' to avoid the dataset do not have matching rows
   
   return(M)
 }
@@ -86,15 +85,14 @@ cat("Matrix M successfully built! Dimensions:", dim(M)[1], "x", dim(M)[2], "\n\n
 # Task 7: Next-Note Sampling Function next_note
 # ==============================================================================
 next_note <- function(key, M, w = NULL) {
-  # 1. Determine maximum lag mlag from matrix dimensions
   mlag <- ncol(M) - 1
   
-  # Default mixture weights to a vector of ones of length mlag
+  #Default mixture weights to a vector of ones of length mlag
   if (is.null(w)) {
     w <- rep(1, mlag)
   }
   
-  # 2. Retain only the trailing mlag tokens if key exceeds mlag
+  #only keep the trailing mlag tokens if key > mlag
   if (length(key) > mlag) {
     key <- tail(key, mlag)
   }
@@ -103,44 +101,38 @@ next_note <- function(key, M, w = NULL) {
   cand_tokens <- integer(0)
   cand_probs <- numeric(0)
   
-  # 3. Iterate over matching order k from 1 to k_max (k notes suffix)
+  #Check matched for different order models(k from 1 to k_max)
   for (k in 1:k_max) {
-    # According to formula (1): sum_{i=1}^m w_i P(next | v[i:m])
-    # A sequence of length k corresponds to i = mlag - k + 1
-    # Thus, the highest order (k = mlag) uses w[1], and lowest (k = 1) uses w[mlag]
     w_idx <- mlag - k + 1
     weight_k <- w[w_idx]
     
-    # Skip matching when mixture weight is non-positive
+    # Skip matching if mixture weight is non-positive
     if (weight_k <= 0) next
     
     # Extract suffix of length k and select corresponding columns in M
     mc <- mlag - k + 1
     sub_key <- key[(k_max - k + 1):k_max]
     
-    # Vectorized matching via colSums on transposed sub-matrix
+    # find the matching rows by the formula
     ii <- colSums(!(t(M[, mc:mlag, drop = FALSE]) == sub_key))
     matched_idx <- which(ii == 0)
     n_u <- length(matched_idx)
     
-    # If matches are found, accumulate candidate tokens and their weights
+    #record candidate next notes and weights
     if (n_u > 0) {
       cand_tokens <- c(cand_tokens, M[matched_idx, mlag + 1])
       cand_probs <- c(cand_probs, rep(weight_k / n_u, n_u))
     }
   }
-  
-  # 4. Sampling decision rules (at most one call to sample)
   total_prob <- sum(cand_probs)
-  
   if (length(cand_tokens) == 0 || total_prob == 0) {
-    # Case 1: No match found -> sample from marginal next-token distribution
+    # Case 1 No match found:sample randomly from all notes in columns (mlag+1)
     return(sample(M[, mlag + 1], size = 1))
   } else if (length(cand_tokens) == 1) {
-    # Case 2: Exactly one candidate -> return directly without invoking sample()
+    # Case 2 Exactly one candidate: return directly without invoking sample()
     return(cand_tokens[1])
   } else {
-    # Case 3: Multiple candidates -> sample according to empirical mixture probabilities
+    # Case 3 Multiple candidates: sample according to empirical mixture probabilities(mixture weights)
     return(sample(cand_tokens, size = 1, prob = cand_probs))
   }
 }
@@ -150,19 +142,19 @@ next_note <- function(key, M, w = NULL) {
 # ==============================================================================
 cat("=== Testing next_note function ===\n")
 
-# Test 1: Predict next note given an initial sequence (e.g., G4w D5w)
+# Test 1: Predict next note from a short prompt
 test_prefix_tokens <- match(c("G4w", "D5w"), notes)
-set.seed(42)
+set.seed(42) # set the random seed to make sure the results could be replicated
 pred_token <- next_note(key = test_prefix_tokens, M = M)
 cat("Input sequence: G4w D5w\n")
 cat("Predicted next Token ID:", pred_token, "| Corresponding note:", notes[pred_token], "\n\n")
 
-# Test 2: Unseen prefix triggering Case 1 fallback sampling
+# Test 2: Non-existent prefix to check the random background sampling
 dummy_key <- c(99999L, 99999L)
 fallback_token <- next_note(key = dummy_key, M = M)
 cat("Fallback sampled note for non-existent prefix:", notes[fallback_token], "\n\n")
 
-# Test 3: Sequential autoregressive generation of 10 notes
+# Test 3: Sequential auto-regressive generation of 10 notes
 seq_test <- test_prefix_tokens
 for (step in 1:10) {
   nxt <- next_note(seq_test, M)
@@ -173,6 +165,18 @@ cat(paste(notes[seq_test], collapse = " "), "\n")
 
 
 #Task 8
+#input: 
+#   start: Token ID into initiate simulation
+#   M: Transition matrix
+#   notes: Vector of note names
+#   W: Mixture weights
+#Output:
+#   sim_music: A single character string representing the simulated music
+#Iteratively calls "next_note" starting from 'start' until:
+#   1) '||' 2) 8 bars('|') 3) 200 notes
+#Finally convert result back into a single text string
+
+
 generate_music<-function(start, M, notes,w=NULL){
   mlag <- ncol(M) - 1
   if (is.null(w)) {
@@ -181,6 +185,8 @@ generate_music<-function(start, M, notes,w=NULL){
   bar_token <- which(notes == "|")
   gen_seq <- start
   bar_count <- if (start == bar_token) 1 else 0
+  
+  # Continue generation until reaching '||', 8 bars, or 200 tokens
   while (length(gen_seq) < 200 && bar_count < 8 && tail(gen_seq, 1) != end_token) {
     nxt <- next_note(key = gen_seq, M = M, w = w)
     gen_seq <- c(gen_seq, nxt)
@@ -188,8 +194,44 @@ generate_music<-function(start, M, notes,w=NULL){
       bar_count <- bar_count + 1
     }
   }
+  
+  # Decode numeric tokens into text string
   gen_notes <- notes[gen_seq]
   sim_music <- paste(gen_notes, collapse = " ")
   return(sim_music)
 }
 
+
+
+# Model evaluation and weight comparison analysis
+# compare different mixture weights:
+# 1) w1=c(1,1,1,1)
+# completely use transitions across all orders that from 1 to 4
+# It is the most balanced musical output. 
+# The 4-note history maintains longer melodic patterns and musical features. The lower lags guarantee smooth transitions and avoid sudden interruption.
+#
+# 2) w2=c(1,0,0,0)
+# use the 4 most recent notes 
+# some parts of it are same with original music piece.
+# However, because 4-note sequence frequency can be very low, it frequently fails to match and falls back to random marginal draws. It causes occasional sharp note jumps.
+#
+# 3) w3=c(0,0,0,1)
+# completely rely on the single immediate preceding note. 
+# note transitions are smooth and practically zero fallback.
+# However, it lose the long term memory of bar stucture and phrase development, which makes it wander without clear direction.
+
+
+set.seed(42)
+cat("\n=== Task 8: Generating Music with Different Mixture Weights ===\n")
+
+# Test Weight Configuration 1: Full mixture model
+sim_w1 <- generate_music(start = 20, M = M, notes = notes, w = c(1, 1, 1, 1))
+cat("\n[w1 = (1, 1, 1, 1)] Balanced Mixture:\n", sim_w1, "\n")
+
+# Test Weight Configuration 2: Strict 4th-order lag model
+sim_w2 <- generate_music(start = 20, M = M, notes = notes, w = c(1, 0, 0, 0))
+cat("\n[w2 = (1, 0, 0, 0)] Pure 4th-Order:\n", sim_w2, "\n")
+
+# Test Weight Configuration 3: Pure 1st-order simple Markov model
+sim_w3 <- generate_music(start = 20, M = M, notes = notes, w = c(0, 0, 0, 1))
+cat("\n[w3 = (0, 0, 0, 1)] Pure 1st-Order:\n", sim_w3, "\n")
