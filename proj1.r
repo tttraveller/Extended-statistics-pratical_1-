@@ -1,3 +1,13 @@
+#========================
+#Group members:
+# Sicheng Liang (s2956212)
+# Lianjie Wu (s2970562)
+# Josie Zhuo (s2959889)
+# Contribution Statement:
+# - Josie Zhuo (33.3%): Implemented preprocess function and tokenization setup(mainly focus on task4-5).
+# - Sicheng Liang (33.3%): Implemented make_matrix and generate_music, testing suite
+# - Lianjie Wu (33.3%): Implemented next_note sampling engine and code review.
+# All members contributed equally to debugging, documentation, code review and Git version control.
 music_raw <- readLines("palestrina.txt")
 length(music_raw)
 head(music_raw,50)
@@ -183,9 +193,3 @@ generate_music<-function(start, M, notes,w=NULL){
   return(sim_music)
 }
 
-#test
-set.seed(42)  
-sim_music <- generate_music(start = 20, M = M, notes = notes, w = c(20, 5, 1, 0.05))
-cat("=== Task 8===\n")
-print(sim_music)
-print(sim_music)
