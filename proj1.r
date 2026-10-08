@@ -1,14 +1,3 @@
-#==============================================================================
-# Practical 1: Markov Music Simulator
-#------------------------------------------------------------------------------
-# This script implements a simple Markov-chain prediction model which is trained on Giovanni Palestrina's choral scores. It preprocesses the raw text score, builds a lagged transition matrix, and then generates simulated music by sampling from the model.
-#
-# Functions defined:
-#   preprocess()    - cleans raw score text into a flat token vector
-#   make_matrix()   - constructs an (n-mlag) x (mlag+1) matrix of token sequences
-#   next_note()     - samples the next note given a current context (key)
-#   generate_music()- simulates a full piece of music up to stopping conditions
-#
 #Group members:
 # Sicheng Liang (s2956212)
 # Lianjie Wu (s2970562)
@@ -18,6 +7,17 @@
 # - Sicheng Liang (33.3%): Implemented make_matrix and generate_music, testing suite
 # - Lianjie Wu (33.3%): Implemented next_note sampling engine and code review.
 # All members contributed equally to debugging, documentation, code review and Git version control.
+#
+# Practical 1: Markov Music Simulator
+#
+# This script implements a simple Markov-chain prediction model which is trained on Giovanni Palestrina's choral scores. It preprocesses the raw text score, builds a lagged transition matrix, and then generates simulated music by sampling from the model.
+#
+# Functions defined:
+#   preprocess()    - cleans raw score text into a flat token vector
+#   make_matrix()   - constructs an (n-mlag) x (mlag+1) matrix of token sequences
+#   next_note()     - samples the next note given a current context (key)
+#   generate_music()- simulates a full piece of music up to stopping conditions
+
 
 #task4
 # preprocess: clean raw score text into a flat token vector
@@ -260,13 +260,6 @@ generate_music<-function(start, M, notes,w=NULL){
 # completely rely on the single immediate preceding note. 
 # note transitions are well-supported by data and practically zero fallback.
 # However, it loses the long term memory of bar structure and phrase development, which makes it wander without clear direction.
-
-
-# -------------------------------------------------------------------------
-
-
-# -------------------------------------------------------------------------
-
 
 set.seed(42)
 cat("\n=== Task 8: Generating Music with Different Mixture Weights ===\n")
