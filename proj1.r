@@ -1,13 +1,36 @@
-#========================
+#==============================================================================
+# Practical 1: Markov Music Simulator
+#------------------------------------------------------------------------------
+# This script implements a simple Markov-chain prediction model which is trained on Giovanni Palestrina's choral scores. It preprocesses the raw text score, builds a lagged transition matrix, and then generates simulated music by sampling from the model.
+#
+# Functions defined:
+#   preprocess()    - cleans raw score text into a flat token vector
+#   make_matrix()   - constructs an (n-mlag) x (mlag+1) matrix of token sequences
+#   next_note()     - samples the next note given a current context (key)
+#   generate_music()- simulates a full piece of music up to stopping conditions
+#
 #Group members:
 # Sicheng Liang (s2956212)
 # Lianjie Wu (s2970562)
 # Josie Zhuo (s2959889)
 # Contribution Statement:
-# - Josie Zhuo (33.3%): Implemented preprocess function and tokenization setup(mainly focus on task4-5).
+# - Josie Zhuo (33.3%): Implemented preprocess function and tokenization setup(mainly focused on task4-5).
 # - Sicheng Liang (33.3%): Implemented make_matrix and generate_music, testing suite
 # - Lianjie Wu (33.3%): Implemented next_note sampling engine and code review.
 # All members contributed equally to debugging, documentation, code review and Git version control.
+
+#task4
+# preprocess: clean raw score text into a flat token vector
+# input:
+#   music: raw character vector from "palestrina.txt"
+# output:
+#   clean_tokens: character vector of notes, rests, and bar-lines
+# steps:
+#   (a) remove first 3 header lines
+#   (b) remove comment lines starting with '#' (keep notes like F#5e)
+#   (c) append "||" to the last line of each piece
+#   (d) append "|" to the end of each measure
+#   (e) split each line into individual tokens by whitespace
 preprocess <- function(music) {
   rawdata <- music
   # (a) Remove the first 3 header lines
@@ -46,6 +69,7 @@ preprocess <- function(music) {
 # ========== Main execution ==========
 music_raw <- readLines("palestrina.txt")
 music_clean <- preprocess(music = music_raw)
+
 # Task5 Markov chain setup
 notes <- unique(music_clean)
 tokens <- match(music_clean, notes)
@@ -55,9 +79,17 @@ if(length(end)==0){
   warning("End marker || not found in tokens")
 }
 
-# ==============================================================================
 # Task 6: Construct Lagged Transition Matrix make_matrix
-# ==============================================================================
+#
+# make_matrix: build a matrix of adjacent token sequences
+# input:
+#   tokens: integer vector of note IDs
+#   end: integer, token ID for "||"
+#   mlag: integer, maximum lag (default 4)
+# output:
+#   M: integer matrix with (n-mlag) rows and (mlag+1) columns.
+#      Each row is one sequence of mlag+1 adjacent tokens.
+#      Rows with "||" in the first mlag columns are removed.
 make_matrix <- function(tokens, end, mlag = 4) {
   n <- length(tokens)
   
@@ -83,7 +115,16 @@ M <- make_matrix(tokens = tokens, end = end_token_id, mlag = 4)
 cat("Matrix M successfully built! Dimensions:", dim(M)[1], "x", dim(M)[2], "\n\n")
 
 # Task 7: Next-Note Sampling Function next_note
-# ==============================================================================
+# next_note: sample the next note token given a current context
+# input:
+#   key: integer vector of recent token IDs
+#   M: transition matrix from make_matrix()
+#   w: numeric vector of mixture weights 
+# output:
+#   A single integer token ID for the next note.
+# details:
+#   Tries matching at full lag order, then reduces by one note at a time.
+#   If no match is found, falls back to marginal sampling.
 next_note <- function(key, M, w = NULL) {
   mlag <- ncol(M) - 1
   
@@ -137,9 +178,8 @@ next_note <- function(key, M, w = NULL) {
   }
 }
 
-# ==============================================================================
 # Task 7 Verification Tests
-# ==============================================================================
+
 cat("=== Testing next_note function ===\n")
 
 # Test 1: Predict next note from a short prompt
@@ -165,17 +205,18 @@ cat(paste(notes[seq_test], collapse = " "), "\n")
 
 
 #Task 8
-#input: 
+# generate_music: simulate a full piece of music
+# input: 
 #   start: Token ID into initiate simulation
 #   M: Transition matrix
 #   notes: Vector of note names
 #   W: Mixture weights
-#Output:
+# output:
 #   sim_music: A single character string representing the simulated music
-#Iteratively calls "next_note" starting from 'start' until:
-#   1) '||' 2) 8 bars('|') 3) 200 notes
-#Finally convert result back into a single text string
-
+# details:
+#   Repeatedly calls next_note() until one of the stopping conditions is met:
+#   (1) "||" is generated, (2) 8 bars ("|") have been generated,
+#   or (3) 200 notes total.
 
 generate_music<-function(start, M, notes,w=NULL){
   mlag <- ncol(M) - 1
@@ -206,7 +247,7 @@ generate_music<-function(start, M, notes,w=NULL){
 # Model evaluation and weight comparison analysis
 # compare different mixture weights:
 # 1) w1=c(1,1,1,1)
-# completely use transitions across all orders that from 1 to 4
+# completely use transitions across all orders from 1 to 4
 # It is the most balanced musical output. 
 # The 4-note history maintains longer melodic patterns and musical features. The lower lags guarantee smooth transitions and avoid sudden interruption.
 #
@@ -217,8 +258,14 @@ generate_music<-function(start, M, notes,w=NULL){
 #
 # 3) w3=c(0,0,0,1)
 # completely rely on the single immediate preceding note. 
-# note transitions are smooth and practically zero fallback.
-# However, it lose the long term memory of bar stucture and phrase development, which makes it wander without clear direction.
+# note transitions are well-supported by data and practically zero fallback.
+# However, it loses the long term memory of bar structure and phrase development, which makes it wander without clear direction.
+
+
+# -------------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------------
 
 
 set.seed(42)
