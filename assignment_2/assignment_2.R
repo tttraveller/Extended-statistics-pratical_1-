@@ -1,13 +1,15 @@
-# Group members:
+# Group members: 36
 # Sicheng Liang (s2956212)
 # Lianjie Wu (s2970562)
 # Josie Zhuo (s2959889)
 #
 # Contribution Statement:
-# - Josie Zhuo
-# - Sicheng Liang 
-# - Lianjie Wu
-#
+# - Josie Zhuo (33.3%)  Responsible for empirical visualisation, variability analysis, and project integration (Task 6).
+# Performed runtime benchmarking (< 1 minute compliance), formatting audits, and Git management.
+# - Sicheng Liang (33.3%) Responsible for win-probability matrices and non-transitive game analysis (Tasks 5 & 7). 
+# - Lianjie Wu (33.3%) Responsible for the core simulation engine and theoretical waiting times (Tasks 1-4).
+#All team members jointly participated in peer code review, cross-testing edge cases, 
+# debugging numerical tolerances, and final script polishing prior to submission.
 #
 # GitHub repository:
 # https://github.com/tttraveller/Extended-statistics-pratical_1-.git
@@ -26,6 +28,11 @@
 #   pmat()           - calculates the pairwise win-probability matrix
 #   best.reply()     - finds the best reply to each pattern
 #   shortest.cycle() - searches for the shortest cycle of clear wins
+
+
+# ==============================================================================
+# SECTION 1: ALL FUNCTION DEFINITIONS
+# ==============================================================================
 
 # Task 1: firsthit()
 # Find the first occurence of a binary pattern a in a toss stream x
@@ -55,17 +62,6 @@ firsthit <- function(x, a){
   # Convert the first starting position to the position of the last toss
   ii[1]+k-1
 }
-
-# Compare the results with know answers
-cat("\nQ1: first completion positions\n")
-x <- c(1,0,0,1,0,1,1,1,0)
-print(data.frame(
-  example = c("101 in example stream", "011 in example stream",
-              "absent", "stream too short", "overlap", "one toss"),
-  expected = c(6,7,NA,NA,3,2),
-  observed = c(firsthit(x,c(1,0,1)), firsthit(x,c(0,1,1)),
-               firsthit(c(0,0,0),c(1,1)), firsthit(c(1),c(1,0)),
-               firsthit(c(1,1,1,1),c(1,1,1)), firsthit(c(0,1),1))))
 
 
 # Task 2: sim.duels()
@@ -127,18 +123,13 @@ sim.duels <- function(a, b, p, nreps){
   ans
 }
 
+
 # Simulate one duel between two different pattens of the same length
 # winner is 1 if a appears first, or 0 if b appears first
 duel <- function(a, b, p = 0.5){
   stopifnot(length(a) == length(b), any(a != b))
   as.numeric(sim.duels(a,b,p,1)[1,])
 }
-
-# ues a fixed seed to make the example reproducible
-set.seed(202602)
-cat("\nQ2: one duel, 101 against 011 (winner, tosses)\n")
-print(duel(c(1,0,1),c(0,1,1)))
-
 
 
 # Task 3: pwin()
@@ -150,28 +141,6 @@ pwin <- function(a, b, p = 0.5, nreps = 10000){
   # Winners are recorded as 1 or 0, so their mean gives the estimated win probability
   mean(sim.duels(a,b,p,nreps)[,1])
 }
-
-# estimate the win probability from 10000 independent duels
-set.seed(202603)
-nr <- 10000
-phat <- pwin(c(1,0,0),c(0,0,0),nreps = nr)
-
-
-#Additionally, calculate the Monte Carlo standard error of the estimated probability
-se <- sqrt(phat*(1-phat)/nr)
-
-# calcuate a Wilson 95% confidence interval for the win probability
-# qnorm(0.975) gives the 97.5th percentile of the standard normal distribution
-z95 <- qnorm(0.975)
-den <- 1+z95^2/nr
-centre <- (phat+z95^2/(2*nr))/den
-half <- z95*sqrt(phat*(1-phat)/nr+z95^2/(4*nr^2))/den
-
-#display the estimate, standard error and the confidence interval
-cat("\nQ3: P(100 beats 000), Monte Carlo SE and Wilson 95% interval\n")
-print(data.frame(estimate = phat, SE = se, lower = centre-half, upper = centre+half),
-      digits = 4, row.names = FALSE)
-
 
 
 # Task 4: ewait()
@@ -194,27 +163,6 @@ ewait <- function(a, p = 0.5){
   }
   ew
 }
-# compare exact waiting time with Monte Carlo estimates for several patterns
-set.seed(202604)
-cat("\nQ4: exact waits and Monte Carlo checks (MC SE shown)\n")
-aa <- list(c(1,1),c(0,0),c(1,0),c(0,1),c(1,0,1),c(1,1,1))
-pp <- c(0.5,0.5,0.5,0.5,0.25,0.7)
-wait.check <- data.frame(pattern = sapply(aa,paste,collapse = ""),
-                         p = pp, exact = NA_real_, MC = NA_real_, SE = NA_real_)
-for(i in seq_along(aa)){
-  
-  # using the same pattern twice makes the simulation stop at its first appearance
-  # the return toss count is therefore the waiting time for that pattern
-  w <- sim.duels(aa[[i]],aa[[i]],pp[i],10000)[,2]
-  
-  #calculate the exact mean, simulated mean and Monte Carlo standard error
-  wait.check[i,3:5] <- c(ewait(aa[[i]],pp[i]),mean(w),sd(w)/sqrt(length(w)))
-}
-
-#compare the simulation estimates with the exact values
-wait.check$relative.error <- (wait.check$MC-wait.check$exact)/wait.check$exact
-wait.check$standardised.error <- (wait.check$MC-wait.check$exact)/wait.check$SE
-print(wait.check, digits = 4, row.names = FALSE)
 
 
 #Task 5
@@ -227,6 +175,7 @@ patterns <- function(k) {
   }
   a
 }
+
 
 pmat <- function(k, p = 0.5, nreps = 10000) {
   a <- patterns(k)
@@ -242,6 +191,7 @@ pmat <- function(k, p = 0.5, nreps = 10000) {
   }
   M
 }
+
 
 # Task 5(a)
 # Identify the best counter-strategy to each pattern.
@@ -290,6 +240,75 @@ shortest.cycle <- function(M, cutoff = 0.5) {
   #return the best cycle
   best
 }
+
+
+# ==============================================================================
+# SECTION 2: EXECUTION AND ANALYSIS SCRIPT
+# ==============================================================================
+
+# Compare the results with know answers
+cat("\nQ1: first completion positions\n")
+x <- c(1,0,0,1,0,1,1,1,0)
+print(data.frame(
+  example = c("101 in example stream", "011 in example stream",
+              "absent", "stream too short", "overlap", "one toss"),
+  expected = c(6,7,NA,NA,3,2),
+  observed = c(firsthit(x,c(1,0,1)), firsthit(x,c(0,1,1)),
+               firsthit(c(0,0,0),c(1,1)), firsthit(c(1),c(1,0)),
+               firsthit(c(1,1,1,1),c(1,1,1)), firsthit(c(0,1),1))))
+
+
+# ues a fixed seed to make the example reproducible
+set.seed(202602)
+cat("\nQ2: one duel, 101 against 011 (winner, tosses)\n")
+print(duel(c(1,0,1),c(0,1,1)))
+
+
+# estimate the win probability from 10000 independent duels
+set.seed(202603)
+nr <- 10000
+phat <- pwin(c(1,0,0),c(0,0,0),nreps = nr)
+
+
+#Additionally, calculate the Monte Carlo standard error of the estimated probability
+se <- sqrt(phat*(1-phat)/nr)
+
+# calcuate a Wilson 95% confidence interval for the win probability
+# qnorm(0.975) gives the 97.5th percentile of the standard normal distribution
+z95 <- qnorm(0.975)
+den <- 1+z95^2/nr
+centre <- (phat+z95^2/(2*nr))/den
+half <- z95*sqrt(phat*(1-phat)/nr+z95^2/(4*nr^2))/den
+
+#display the estimate, standard error and the confidence interval
+cat("\nQ3: P(100 beats 000), Monte Carlo SE and Wilson 95% interval\n")
+print(data.frame(estimate = phat, SE = se, lower = centre-half, upper = centre+half),
+      digits = 4, row.names = FALSE)
+
+
+# compare exact waiting time with Monte Carlo estimates for several patterns
+set.seed(202604)
+cat("\nQ4: exact waits and Monte Carlo checks (MC SE shown)\n")
+aa <- list(c(1,1),c(0,0),c(1,0),c(0,1),c(1,0,1),c(1,1,1))
+pp <- c(0.5,0.5,0.5,0.5,0.25,0.7)
+wait.check <- data.frame(pattern = sapply(aa,paste,collapse = ""),
+                         p = pp, exact = NA_real_, MC = NA_real_, SE = NA_real_)
+for(i in seq_along(aa)){
+  
+  # using the same pattern twice makes the simulation stop at its first appearance
+  # the return toss count is therefore the waiting time for that pattern
+  w <- sim.duels(aa[[i]],aa[[i]],pp[i],10000)[,2]
+  
+  #calculate the exact mean, simulated mean and Monte Carlo standard error
+  wait.check[i,3:5] <- c(ewait(aa[[i]],pp[i]),mean(w),sd(w)/sqrt(length(w)))
+}
+
+#compare the simulation estimates with the exact values
+wait.check$relative.error <- (wait.check$MC-wait.check$exact)/wait.check$exact
+wait.check$standardised.error <- (wait.check$MC-wait.check$exact)/wait.check$SE
+print(wait.check, digits = 4, row.names = FALSE)
+
+
 # Execution & Analysis
 set.seed(42)
 nreps <- 10000
@@ -354,7 +373,6 @@ cat("Patterns '001' (TTH) and '100' (HTT) both have identical isolated E(W) = 8 
 cat("Yet in a direct head-to-head duel, estimated P('100' beats '001') =", 
     round(M["100", "001"], 4), "(approx 3/4 to 1/4 advantage).\n")
 cat("Thus, isolated waiting times fail to determine competitive head-to-head outcomes.\n")
-
 
 
 # Task 6
@@ -444,8 +462,6 @@ cat("Standard deviation of estimates:",
     round(sd(est),4),"\n")
 
 cat("\nPlots saved as Q6_duration.png and Q6_variability.png\n")
-
-
 
 
 # Task 7
