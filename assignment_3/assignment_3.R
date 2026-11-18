@@ -1,3 +1,4 @@
+#t_start <- proc.time()
 set.seed(12345)
 n <- 100
 time <- 1:n
@@ -150,6 +151,7 @@ legend(
 
 
 #task4
+
 #generate the 121 lambda values
 log_lambda_grid <- seq(-1, 5, by = 0.05)
 lambda_grid <- exp(log_lambda_grid)
@@ -311,6 +313,8 @@ if (m_hat > 0L) {
 cat("Selected lambda:", lambda_best, "\n")
 cat("Estimated number of changepoints:", m_hat, "\n")
 cat("Estimated changepoint locations:", tau_hat, "\n")
+cat("Task 5 maximum absolute gradient:",
+    max(abs(poission_lasso_grad(beta_best, y, lambda = lambda_best))), "\n")
 
 # Plot the observations, true mean and estimated mean
 plot(time, y,
@@ -516,4 +520,6 @@ legend("topright",
        cex = 0.76, bty = "n")
 
 cat("Task 7 plot displayed.\n")
-
+#t_total <- proc.time() - t_start
+#print(t_total)
+#cat("Total elapsed time (s):", t_total["elapsed"], "\n")
