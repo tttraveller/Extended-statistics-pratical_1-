@@ -1,4 +1,4 @@
-#t_start <- proc.time()
+t_start <- proc.time()
 #Task 1: Simulate data from a poisson changepoint model
 set.seed(12345)
 n <- 100
@@ -153,7 +153,7 @@ legend(
 )
 
 
-#task4
+#task4 Penalty selection via grid search and mBIC
 
 #generate the 121 lambda values
 log_lambda_grid <- seq(-1, 5, by = 0.05)
@@ -200,9 +200,9 @@ for (i in seq_along(lambda_grid)) {
   )
   
   # Compute the effective degrees of freedom
-  # avoid the numerical Error since the Hessian matrix is numerically singular
+  # Handle possible numerical failures when solving the Hessian system.
   edf <- tryCatch(
-    sum(diag(solve(H_lambda, H_0))),
+    sum(diag(solve(H_lambda, H_0))),#compute the trace(H_lambda^{-1} * H_0)
     error = function(e) {
       warning(paste("EDF calculation failed at lambda =", lambda_current))
       NA_real_
@@ -277,7 +277,7 @@ points(log_lambda_best, mbic_values[best_index],
        col = "red", pch = 16)
 
 
-#task5
+#task5 Optimal model refitting and changepoint identification
 
 # Refit the model
 fit_best <- fit_poisson(
@@ -292,7 +292,11 @@ cat("Task 5 BFGS convergence code:", fit_best$convergence, "\n")
 if (fit_best$convergence != 0L) {
   stop("Task 5 optimisation did not converge.")
 }
-
+# Extra check for the lambda
+if (any(convergence_codes != 0L) ||
+    any(!is.finite(mbic_values))) {
+  warning("Some grid search results are invalid. Inspect Task 4.")
+}
 # Extract the estimated parameters
 beta_best <- fit_best$par
 
@@ -523,6 +527,6 @@ legend("topright",
        cex = 0.76, bty = "n")
 
 cat("Task 7 plot displayed.\n")
-#t_total <- proc.time() - t_start
-#print(t_total)
-#cat("Total elapsed time (s):", t_total["elapsed"], "\n")
+t_total <- proc.time() - t_start
+print(t_total)
+cat("Total elapsed time (s):", t_total["elapsed"], "\n")
