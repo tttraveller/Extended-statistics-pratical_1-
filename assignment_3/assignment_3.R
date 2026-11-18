@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 #t_start <- proc.time()
-=======
 #Task 1: Simulate data from a poisson changepoint model
->>>>>>> b035f4bb5b8a4eab19bd727465574c908375c5f2
 set.seed(12345)
 n <- 100
 time <- 1:n
