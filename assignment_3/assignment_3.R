@@ -161,7 +161,7 @@ legend(
   col = c("grey70", "black", "blue"),
   pch = c(16, NA, NA),
   lty = c(NA, 1, 1),
-  cex = 0.5,
+  cex = 0.8,
   bty = "n"
 )
 
@@ -356,7 +356,7 @@ legend("topright",
        pch = c(16, NA, NA),
        lty = c(NA, 1, 1),
        lwd = c(NA, 2, 2),
-       cex = 0.5,
+       cex = 0.8,
        bty = "n")
 
 
@@ -434,7 +434,7 @@ legend("topright",
        pch = c(16, NA, NA, NA),
        lty = c(NA, 1, 1, 1),
        lwd = c(NA, 2, 2, 2),
-       cex = 0.5, bty = "n")
+       cex = 0.8, bty = "n")
 
 
 # Task 7: Final plot with bias-corrected confidence limits
@@ -470,4 +470,4 @@ legend("topright",
        pch = c(16, NA, NA, NA, NA, NA),
        lty = c(NA, 1, 1, 1, 2, 3),
        lwd = c(NA, 2, 2, 2, 1.5, 1.5),
-       cex = 0.5, bty = "n")
+       cex = 0.8, bty = "n")
