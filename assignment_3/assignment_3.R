@@ -345,7 +345,7 @@ plot(time, y,
      col = "grey70",
      xlab = "Time",
      ylab = "Count",
-     main = "Task 5: Best fitted changepoint model",
+     main = "Task 5: Best fitted changepoint model"
      )
 
 lines(time, mu_true, col = "black", lwd = 2, type = "s")
