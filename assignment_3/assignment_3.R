@@ -1,19 +1,18 @@
 # Practical 3: Poisson Changepoint Model
 # GitHub repository: https://github.com/tttraveller/Extended-statistics-pratical_1-.git
 #
-# Group members: 36
+# Group numbers: 36
 # Group member contributions:
-# Lianjie Wu(s2970562): Data simulation, smoothed LASSO objective/gradient/Hessian 
-# with finite-difference checks, and initial BFGS model fit (lambda = 1). (mainly 
-# focus on Tasks 1-3)
-# Sicheng Liang(s2956212): Warm-started mBIC grid search (EDF & lambda selection),
-# optimal model refitting, and changepoint count/location identification. (mainly 
-# focus on Tasks 4-5)
-# Josie Zhuo(s2959889): Parametric bootstrap (B = 200), bias-corrected mean and
-# 95% confidence limits, and final uncertainty visualisation. (mainly focus on 
-# Tasks 6-7)
-# All members contributed equally to debugging, documentation, code review and 
-# Git version control.
+# Lianjie Wu(s2970562): Tasks 1-3
+#   Data simulation, smoothed LASSO objective and derivatives,
+#   finite-difference verification, and initial BFGS fitting.
+# Sicheng Liang(s2956212): Tasks 4-5
+#   mBIC-based penalty selection, optimal model refitting,
+#   and changepoint estimation.
+# Josie Zhuo(s2959889): Tasks 6-7
+#   Parametric bootstrap, bias correction, confidence intervals,
+#   and final visualisation.
+# All members participated in code review, testing, and integration.
 
 #t_start <- proc.time()
 #Task 1: Simulate data from a poisson changepoint model
@@ -21,12 +20,10 @@ set.seed(12345)
 n <- 100
 time <- 1:n
 
-# Define the true changepoints and segment means
 tau_true <- c(1, 30, 70, n+1)  ## cpt positions (with tau_0 and tau_{m+1})
 m_true <- length(tau_true)-2  ## number of cpts (m)
 theta_true <- c(10, 2, 7)  ## segment parameters (theta_1, theta_2, theta_3)
 
-# construct the piecewise constant mean function
 mu_true <- numeric(n)  ## mean function
 
 for(i in seq_along(theta_true))
@@ -41,7 +38,7 @@ abline(v = tau_true[-c(1,length(tau_true))], lty="dashed")
 #Task 2: Smoothed LASSO objective and its derivatives
 
 # Compute the penalised negative Poisson log-likelihood
-# The cimulative sum of beta gives the log-mean at each time point
+# The cumulative sum of beta gives the log-mean at each time point
 # Only beta[2:n]is penalised, since beta[1] is the baseline
 poission_lasso_objective <- function(beta, y, lambda = 1, eps = 1e-6) {
   eta <- cumsum(beta)
@@ -52,7 +49,7 @@ poission_lasso_objective <- function(beta, y, lambda = 1, eps = 1e-6) {
 }
 
 # Compute the gradient of the penalised objective
-# Reverse cumulative sums give the derivatives of the likelihood
+# Reverse cumulative sums compute the negative log-likelihood gradient
 # The smoothed LASSO derivative is added for beta[2:n]
 poission_lasso_grad <- function(beta, y, lambda = 1, eps = 1e-6) {
   mu <- exp(cumsum(beta))
@@ -170,7 +167,7 @@ legend(
 )
 
 
-#task4 Penalty selection via grid search and mBIC
+#Task 4: Penalty selection via grid search and mBIC
 
 #generate the 121 lambda values
 log_lambda_grid <- seq(-1, 5, by = 0.05)
@@ -245,11 +242,6 @@ for (i in seq_along(lambda_grid)) {
   mbic_values[i] <- mbic
 }
 
-# Warn if any grid points failed to converge or produced invalid mBIC values
-if (any(convergence_codes != 0L, na.rm = TRUE) ||
-    any(!is.finite(mbic_values))) {
-  warning("Some grid search results are invalid. Inspect Task 4.")
-}
 # Combine the results
 q4_results <- data.frame(
   log_lambda = log_lambda_grid,
@@ -298,6 +290,7 @@ abline(v = log_lambda_best, col = "red", lty = 2)
 points(log_lambda_best, mbic_values[best_index],
        col = "red", pch = 16)
 
+
 #task5 Optimal model refitting and changepoint identification
 
 # Refit the model
@@ -313,7 +306,11 @@ cat("Task 5 BFGS convergence code:", fit_best$convergence, "\n")
 if (fit_best$convergence != 0L) {
   stop("Task 5 optimisation did not converge.")
 }
-
+# Extra check for the lambda
+if (any(convergence_codes != 0L) ||
+    any(!is.finite(mbic_values))) {
+  warning("Some grid search results are invalid. Inspect Task 4.")
+}
 # Extract the estimated parameters
 beta_best <- fit_best$par
 
