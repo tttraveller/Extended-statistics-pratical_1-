@@ -149,8 +149,7 @@ plot(
   time, y,
   pch = 16, col = "grey70",
   xlab = "Time", ylab = "Count",
-  main = "Task 3: Initial fit (lambda = 1)",
-  cex = 0.5
+  main = "Task 3: Initial fit (lambda = 1)"
 )
 
 lines(time, mu_true, col = "black", lwd = 2, type = "s")
@@ -382,25 +381,24 @@ mu_boot <- matrix(NA_real_, nrow = B, ncol = n_obs)
 boot_convergence <- integer(B)
 
 # Simulate Poisson data and refit with the selected penalty.
-boot_elapsed <- system.time({
-  for (b in seq_len(B)) {
-    y_sim <- rpois(n_obs, lambda = mu_best)
-    fit_sim <- fit_poisson(y_sim, lambda = lambda_best,
-                           start = beta_best)
+
+for (b in seq_len(B)) {
+  y_sim <- rpois(n_obs, lambda = mu_best)
+  fit_sim <- fit_poisson(y_sim, lambda = lambda_best,
+                          start = beta_best)
     
-    # Verify convergence before accepting the fitted mean.
-    boot_convergence[b] <- fit_sim$convergence
-    if (fit_sim$convergence != 0L) {
-      stop(sprintf("Task 6: bootstrap fit %d did not converge.", b))
-    }
-    
-    mu_sim <- exp(cumsum(fit_sim$par))
-    if (any(!is.finite(mu_sim)) || any(mu_sim <= 0)) {
-      stop(sprintf("Task 6: invalid fitted mean for sample %d.", b))
-    }
-    mu_boot[b, ] <- mu_sim
+  # Verify convergence before accepting the fitted mean.
+  boot_convergence[b] <- fit_sim$convergence
+  if (fit_sim$convergence != 0L) {
+    stop(sprintf("Task 6: bootstrap fit %d did not converge.", b))
   }
-})[["elapsed"]]
+    
+  mu_sim <- exp(cumsum(fit_sim$par))
+  if (any(!is.finite(mu_sim)) || any(mu_sim <= 0)) {
+    stop(sprintf("Task 6: invalid fitted mean for sample %d.", b))
+  }
+  mu_boot[b, ] <- mu_sim
+}
 
 
 # Estimate the bootstrap mean and correct its pointwise bias.
