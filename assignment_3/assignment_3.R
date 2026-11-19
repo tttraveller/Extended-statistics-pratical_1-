@@ -38,7 +38,7 @@ abline(v = tau_true[-c(1,length(tau_true))], lty="dashed")
 
 # Compute the penalised negative Poisson log-likelihood
 # The cumulative sum of beta gives the log-mean at each time point
-# Only beta[2:n]is penalised, since beta[1] is the baseline
+# Only beta[2:n] is penalised, since beta[1] is the baseline
 poission_lasso_objective <- function(beta, y, lambda = 1, eps = 1e-6) {
   eta <- cumsum(beta)
   mu <- exp(eta)
