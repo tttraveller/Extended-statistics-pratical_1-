@@ -1,7 +1,7 @@
 # Practical 3: Poisson Changepoint Model
 # GitHub repository: https://github.com/tttraveller/Extended-statistics-pratical_1-.git
 #
-# Group numbers: 36
+# Group number: 36
 # Group member contributions:
 # Lianjie Wu(s2970562): Tasks 1-3
 #   Data simulation, smoothed LASSO objective and derivatives,
@@ -145,7 +145,7 @@ if (fit_initial$convergence != 0L) stop("Task 3 did not converge.")
 # Recover the estimated mean from the fitted log-mean parameters
 mu_initial <- exp(cumsum(fit_initial$par))
 
-# Compare observations with the ture and estimated mean functions
+# Compare observations with the true and estimated mean functions
 plot(
   time, y,
   pch = 16, col = "grey70",
