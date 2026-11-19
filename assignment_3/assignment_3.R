@@ -3,10 +3,17 @@
 #
 # Group members: 36
 # Group member contributions:
-# Lianjie Wu(s2970562):    Tasks 1-2
-# Sicheng Liang(s2956212): Tasks 3-5
-# Josie Zhuo(s2959889):    Tasks 6-7
-# All members contributed to code review, testing and debugging.
+# Lianjie Wu(s2970562): Data simulation, smoothed LASSO objective/gradient/Hessian 
+# with finite-difference checks, and initial BFGS model fit (lambda = 1). (mainly 
+# focus on Tasks 1-3)
+# Sicheng Liang(s2956212): Warm-started mBIC grid search (EDF & lambda selection),
+# optimal model refitting, and changepoint count/location identification. (mainly 
+# focus on Tasks 4-5)
+# Josie Zhuo(s2959889): Parametric bootstrap (B = 200), bias-corrected mean and
+# 95% confidence limits, and final uncertainty visualisation. (mainly focus on 
+# Tasks 6-7)
+# All members contributed equally to debugging, documentation, code review and 
+# Git version control.
 
 #t_start <- proc.time()
 #Task 1: Simulate data from a poisson changepoint model
