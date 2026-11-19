@@ -241,6 +241,11 @@ for (i in seq_along(lambda_grid)) {
   loglik_values[i] <- loglik
   mbic_values[i] <- mbic
 }
+# Warn if any grid points failed to converge or produced invalid mBIC values
+if (any(convergence_codes != 0L, na.rm = TRUE) ||
+    any(!is.finite(mbic_values))) {
+  warning("Some grid search results are invalid. Inspect Task 4.")
+}
 
 # Combine the results
 q4_results <- data.frame(
@@ -306,11 +311,7 @@ cat("Task 5 BFGS convergence code:", fit_best$convergence, "\n")
 if (fit_best$convergence != 0L) {
   stop("Task 5 optimisation did not converge.")
 }
-# Extra check for the lambda
-if (any(convergence_codes != 0L) ||
-    any(!is.finite(mbic_values))) {
-  warning("Some grid search results are invalid. Inspect Task 4.")
-}
+
 # Extract the estimated parameters
 beta_best <- fit_best$par
 
