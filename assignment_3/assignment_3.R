@@ -14,7 +14,6 @@
 #   and final visualisation.
 # All members participated in code review, testing, and integration.
 
-#t_start <- proc.time()
 #Task 1: Simulate data from a poisson changepoint model
 set.seed(12345)
 n <- 100
@@ -150,7 +149,8 @@ plot(
   time, y,
   pch = 16, col = "grey70",
   xlab = "Time", ylab = "Count",
-  main = "Task 3: Initial fit (lambda = 1)"
+  main = "Task 3: Initial fit (lambda = 1)",
+  cex = 0.5
 )
 
 lines(time, mu_true, col = "black", lwd = 2, type = "s")
@@ -162,7 +162,7 @@ legend(
   col = c("grey70", "black", "blue"),
   pch = c(16, NA, NA),
   lty = c(NA, 1, 1),
-  cex = 0.85,
+  cex = 0.5,
   bty = "n"
 )
 
@@ -216,7 +216,8 @@ for (i in seq_along(lambda_grid)) {
   # Compute the effective degrees of freedom
   # Handle possible numerical failures when solving the Hessian system.
   edf <- tryCatch(
-    sum(diag(solve(H_lambda, H_0))),#compute the trace(H_lambda^{-1} * H_0)
+    #compute the trace(H_lambda^{-1} * H_0)
+    sum(diag(solve(H_lambda, H_0))),
     error = function(e) {
       warning(paste("EDF calculation failed at lambda =", lambda_current))
       NA_real_
@@ -344,7 +345,8 @@ plot(time, y,
      col = "grey70",
      xlab = "Time",
      ylab = "Count",
-     main = "Task 5: Best fitted changepoint model")
+     main = "Task 5: Best fitted changepoint model",
+     )
 
 lines(time, mu_true, col = "black", lwd = 2, type = "s")
 lines(time, mu_best, col = "blue", lwd = 2, type = "s")
@@ -355,6 +357,7 @@ legend("topright",
        pch = c(16, NA, NA),
        lty = c(NA, 1, 1),
        lwd = c(NA, 2, 2),
+       cex = 0.5,
        bty = "n")
 
 
@@ -418,9 +421,6 @@ stopifnot(all(is.finite(mu_bc)), all(is.finite(q_L_bc)),
 
 cat("Task 6 completed bootstrap fits:",
     sum(boot_convergence == 0L), "of", B, "\n")
-#cat("Task 6 bootstrap elapsed time (seconds):",
-#    round(boot_elapsed, 2), "\n")
-
 # Compare observed counts and the three mean functions.
 plot(time, y, pch = 16, col = "grey70",
      ylim = range(c(0, y, mu_true, mu_best, mu_bar)),
@@ -436,7 +436,7 @@ legend("topright",
        pch = c(16, NA, NA, NA),
        lty = c(NA, 1, 1, 1),
        lwd = c(NA, 2, 2, 2),
-       cex = 0.8, bty = "n")
+       cex = 0.5, bty = "n")
 
 
 # Task 7: Final plot with bias-corrected confidence limits
@@ -472,9 +472,4 @@ legend("topright",
        pch = c(16, NA, NA, NA, NA, NA),
        lty = c(NA, 1, 1, 1, 2, 3),
        lwd = c(NA, 2, 2, 2, 1.5, 1.5),
-       cex = 0.76, bty = "n")
-
-cat("Task 7 plot displayed.\n")
-#t_total <- proc.time() - t_start
-#print(t_total)
-#cat("Total elapsed time (s):", t_total["elapsed"], "\n")
+       cex = 0.5, bty = "n")
